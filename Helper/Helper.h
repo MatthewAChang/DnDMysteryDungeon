@@ -49,7 +49,7 @@ public:
     {
         using namespace CharacterDefinitions;
 
-        std::pair<int, int> move = AStar::FindNextMove(levelMap, {src.second, src.first}, {dest.second, dest.first});
+        std::pair<int, int> move = AStar::FindNextMove(levelMap, std::vector<std::vector<int>>(), {src.second, src.first}, {dest.second, dest.first});
 
         return GetDirectionToMove(src, move);
     }

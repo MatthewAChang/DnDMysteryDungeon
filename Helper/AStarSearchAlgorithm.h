@@ -4,8 +4,6 @@
 #include "Definitions/CharacterDefinitions.h"
 #include "Definitions/TypeDefinitions.h"
 
-#include <vector>
-
 typedef struct Cell
 {
     // Row and Column index of its parent
@@ -21,10 +19,6 @@ typedef struct Cell
 class AStar
 {
 public:
-    static std::pair<int, int> FindNextMove(const LevelTerrainMap& levelMap,
-                                            const std::pair<int, int>& src,
-                                            const std::pair<int, int>& dest);
-
     static std::pair<int, int> FindNextMove(const LevelTerrainMap& levelMap,
                                             const std::vector<std::vector<int>>& characterMap,
                                             const std::pair<int, int>& src,
