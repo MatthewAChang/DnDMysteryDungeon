@@ -2,6 +2,7 @@
 #define ENEMYGENERATOR_H
 
 #include "Definitions/EnemyDefinitions.h"
+#include "Definitions/TypeDefinitions.h"
 
 #include <memory>
 
@@ -15,7 +16,7 @@ public:
     ~EnemyGenerator();
 
     std::shared_ptr<Enemy> GenerateEnemy(EnemyDefinitions::EnemyEnum eEnemy,
-                                         std::pair<int, int> location,
+                                         Location location,
                                          CharacterDefinitions::EnemyStateEnum state);
 
     int GetID() const { return m_NextID; }

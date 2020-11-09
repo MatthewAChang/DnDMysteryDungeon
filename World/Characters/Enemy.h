@@ -15,7 +15,7 @@ public:
           int health,
           std::shared_ptr<Armour> armour,
           std::shared_ptr<Weapon> weapon,
-          std::pair<int, int> location,
+          Location location,
           CharacterDefinitions::EnemyStateEnum state);
     ~Enemy() {}
 
@@ -24,8 +24,6 @@ public:
 
     void SetTarget(std::shared_ptr<Character> target) { m_target = target; }
     std::shared_ptr<Character> GetTarget() const { return m_target; }
-
-    virtual void Action() override;
 
     CharacterDefinitions::EnemyStateEnum m_state;
     std::shared_ptr<Character> m_target;

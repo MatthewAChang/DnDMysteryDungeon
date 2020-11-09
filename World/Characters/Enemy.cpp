@@ -6,18 +6,10 @@ Enemy::Enemy(int id,
              int health,
              std::shared_ptr<Armour> armour,
              std::shared_ptr<Weapon> weapon,
-             std::pair<int, int> location,
+             Location location,
              CharacterDefinitions::EnemyStateEnum state) :
     Character(id, name, abilityScores, health, armour, weapon, location),
     m_state(state),
     m_target(nullptr)
 {
-}
-
-void Enemy::Action()
-{
-    auto location = GetLocation();
-    location.first += 1;
-
-    SetLocation(location);
 }

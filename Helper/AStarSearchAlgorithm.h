@@ -19,19 +19,23 @@ typedef struct Cell
 class AStar
 {
 public:
-    static std::pair<int, int> FindNextMove(const LevelTerrainMap& levelMap,
-                                            const std::vector<std::vector<int>>& characterMap,
-                                            const std::pair<int, int>& src,
-                                            const std::pair<int, int>& dest);
+    static Location FindNextMove(const LevelTerrainMap& levelMap,
+                                 const LevelInteractableMap& interactableMap,
+                                 const LevelCharacterMap& characterMap,
+                                 Location src,
+                                 Location dest);
 
 private:
-    static bool IsUnblockedLevelMap(const LevelTerrainMap& levelMap, int i, int j);
-    static bool IsUnblockedCharacterMap(const std::vector<std::vector<int>>& characterMap, int i, int j);
+    static bool IsUnblockedMap(const LevelTerrainMap& terrainMap,
+                               const LevelInteractableMap& interactableMap,
+                               const LevelCharacterMap& characterMap,
+                               int i,
+                               int j);
 
-    static double CalculateHValue(int row, int col, const std::pair<int, int>& dest);
-    static bool IsDestination(int row, int col, const std::pair<int, int>& dest);
-    static std::pair<int, int> Trace(const std::vector<std::vector<Cell>>& cellDetails,
-                                     const std::pair<int, int>& dest);
+    static double CalculateHValue(int row, int col, Location dest);
+    static bool IsDestination(int row, int col, Location dest);
+    static Location Trace(const std::vector<std::vector<Cell>>& cellDetails,
+                          Location dest);
 };
 
 #endif // ASTARSEARCHALGORITHM_H

@@ -7,7 +7,7 @@ Weapon::Weapon(std::string name,
                CharacterDefinitions::AbilityEnum abilityModifier,
                WeaponDefinitions::RangeEnum range,
                bool twoHanded) :
-    Equipment(name),
+    Equipment(name, ItemDefinitions::eWeapon),
     m_damages(damages),
     m_abilityModifier(abilityModifier),
     m_range(range),

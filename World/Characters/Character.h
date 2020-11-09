@@ -2,6 +2,8 @@
 #define CHARACTER_H
 
 #include "Definitions/CharacterDefinitions.h"
+#include "Definitions/MapDefinitions.h"
+#include "Definitions/TypeDefinitions.h"
 
 #include <memory>
 #include <string>
@@ -26,7 +28,7 @@ public:
               int health,
               std::shared_ptr<Armour> armour,
               std::shared_ptr<Weapon> weapon,
-              std::pair<int, int> location);
+              Location location);
     ~Character();
 
     int GetID() const { return m_id; }
@@ -49,11 +51,11 @@ public:
     void UpdateArmourClass();
     int GetArmourClass() const { return m_armourClass; }
 
-    std::pair<int, int> GetOldLocation() const { return m_oldLocation; }
-    std::pair<int, int> GetLocation() const { return m_location; }
-    void SetLocation(std::pair<int, int> location);
-    CharacterDefinitions::DirectionEnum GetDirection() const { return m_eDirection; }
-    void SetDirection(CharacterDefinitions::DirectionEnum eDirection) { m_eDirection = eDirection; }
+    Location GetOldLocation() const { return m_oldLocation; }
+    Location GetLocation() const { return m_location; }
+    void SetLocation(Location location);
+    MapDefinitions::DirectionEnum GetDirection() const { return m_eDirection; }
+    void SetDirection(MapDefinitions::DirectionEnum eDirection) { m_eDirection = eDirection; }
 
     QImage GetIdleSprite() {
         return m_sprites[m_eDirection - 1];
@@ -63,9 +65,6 @@ public:
     int GetDamage() const;
     void TakeDamage(int damage);
     bool IsAlive() const { return m_health > 0; }
-
-    virtual bool IsPlayer() const { return false; }
-    virtual void Action() {}
 
 private:
     int m_id;
@@ -83,7 +82,7 @@ private:
 
     std::pair<int,int> m_oldLocation;
     std::pair<int,int> m_location;
-    CharacterDefinitions::DirectionEnum m_eDirection;
+    MapDefinitions::DirectionEnum m_eDirection;
 
     std::vector<QImage> m_sprites;
 };

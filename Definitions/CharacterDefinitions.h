@@ -5,9 +5,7 @@ namespace CharacterDefinitions
 {
     enum AbilityEnum { eStrength = 0, eDexterity, eConstitution, eIntelligence, eWisdom, eCharisma };
 
-    enum DirectionEnum { eNull = 0, eWest, eNorth, eEast, eSouth };
-
-    enum EnemyStateEnum { eIdle = 0, eGuard, eAggro };
+    enum EnemyStateEnum { eIdle = 0, eGuard, eAggro, eSleep };
 }
 
 #endif // CHARACTERDEFINITIONS_H

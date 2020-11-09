@@ -1,7 +1,7 @@
 CONFIG += c++11
 
 SOURCES += \
-    $$PWD/Level.cpp \
- 
+    $$PWD/Level.cpp
+
 HEADERS += \
-    $$PWD/Level.h \
+    $$PWD/Level.h

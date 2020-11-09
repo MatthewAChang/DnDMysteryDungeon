@@ -11,9 +11,14 @@ namespace MapDefinitions
     const int MAP_WIDTH_NUM = 13;
     const int MAP_HEIGHT_NUM = 7;
 
+    const int LEVEL_MAP_EMPTY_ID = -1;
+    const int LEVEL_MAP_PLAYER_ID = 0;
+
     enum LevelTerrainMapEnum { eWall = 0, eFloor };
 
-    enum LevelCharacterMapEnum { eEmpty = -1, ePlayer = 0, eEnemy = 1 };
+    enum LevelInteractableMapEnum { eNone = 0, eTreasure, eDoor };
+
+    enum DirectionEnum { eNull = 0, eWest, eNorth, eEast, eSouth };
 }
 
 #endif // MAPDEFINITIONS_H

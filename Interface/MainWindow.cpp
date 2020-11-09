@@ -1,5 +1,5 @@
 #include "MainWindow.h"
-#include "ui_mainwindow.h"
+#include "ui_MainWindow.h"
 
 #include "Controller/GameController.h"
 #include "Definitions/MapDefinitions.h"
@@ -8,12 +8,13 @@
 #include "World/Generate/LevelGenerator.h"
 #include "World/Generate/PlayerGenerator.h"
 #include "World/Level/Level.h"
+#include "World/Interactable/Door.h"
 
 #include "assert.h"
 
 #include <QGraphicsPixmapItem>
 
-using namespace CharacterDefinitions;
+using namespace MapDefinitions;
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -44,29 +45,50 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
     bool bCompletedAction = false;
 
-    switch(event->key())
+    if (event->modifiers() & Qt::ShiftModifier)
     {
-    case Qt::Key_Left:
-        bCompletedAction = m_pGameController->PlayerMove(eWest);
-        break;
-    case Qt::Key_Up:
-        bCompletedAction = m_pGameController->PlayerMove(eNorth);
-        break;
-    case Qt::Key_Right:
-        bCompletedAction = m_pGameController->PlayerMove(eEast);
-        break;
-    case Qt::Key_Down:
-        bCompletedAction = m_pGameController->PlayerMove(eSouth);
-        break;
-    case Qt::Key_Z:
-        bCompletedAction = m_pGameController->PlayerAttack();
-        break;
-    case Qt::Key_X:
-        bCompletedAction = m_pGameController->PlayerPotion();
-        break;
-    case Qt::Key_C:
-        bCompletedAction = m_pGameController->PlayerUse();
-        break;
+        switch(event->key())
+        {
+        case Qt::Key_Left:
+            bCompletedAction = m_pGameController->PlayerTurn(eWest);
+            break;
+        case Qt::Key_Up:
+            bCompletedAction = m_pGameController->PlayerTurn(eNorth);
+            break;
+        case Qt::Key_Right:
+            bCompletedAction = m_pGameController->PlayerTurn(eEast);
+            break;
+        case Qt::Key_Down:
+            bCompletedAction = m_pGameController->PlayerTurn(eSouth);
+            break;
+        }
+    }
+    else
+    {
+        switch(event->key())
+        {
+        case Qt::Key_Left:
+            bCompletedAction = m_pGameController->PlayerMove(eWest);
+            break;
+        case Qt::Key_Up:
+            bCompletedAction = m_pGameController->PlayerMove(eNorth);
+            break;
+        case Qt::Key_Right:
+            bCompletedAction = m_pGameController->PlayerMove(eEast);
+            break;
+        case Qt::Key_Down:
+            bCompletedAction = m_pGameController->PlayerMove(eSouth);
+            break;
+        case Qt::Key_Z:
+            bCompletedAction = m_pGameController->PlayerAttack();
+            break;
+        case Qt::Key_X:
+            bCompletedAction = m_pGameController->PlayerPotion();
+            break;
+        case Qt::Key_C:
+            bCompletedAction = m_pGameController->PlayerUse();
+            break;
+        }
     }
 
     update();
@@ -79,32 +101,38 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 void MainWindow::DrawMap(QPainter* painter)
 {
+    using namespace MapDefinitions;
+
     std::shared_ptr<Player> player = m_pGameController->GetPlayer();
     std::shared_ptr<Level> level = m_pGameController->GetLevel();
 
     int xOffset = player->GetLocation().first - 6;
     int yOffset = player->GetLocation().second - 3;
 
+    painter->setPen(Qt::NoPen);
+
     // Draw Map
-    for (int i = 0; i < MapDefinitions::MAP_HEIGHT_NUM; ++i)
+    for (int i = 0; i < MAP_HEIGHT_NUM; ++i)
     {
-        for (int j = 0; j < MapDefinitions::MAP_WIDTH_NUM; ++j)
+        for (int j = 0; j < MAP_WIDTH_NUM; ++j)
         {
-            switch(level->GetLevelTerrainMap()[i + yOffset][j + xOffset])
+            Location locationMap = {j + xOffset, i + yOffset};
+
+            bool visible = !(i == 0 || i == MAP_HEIGHT_NUM - 1 || j == 0 || j == MAP_WIDTH_NUM - 1);
+            switch(level->GetLevelTerrainMapAt(locationMap))
             {
-            case MapDefinitions::eWall:
+            case eWall:
             {
-                QRect rect(j * MapDefinitions::BLOCK_SIZE, i * MapDefinitions::BLOCK_SIZE, MapDefinitions::BLOCK_SIZE, MapDefinitions::BLOCK_SIZE);
-                painter->setPen(Qt::SolidLine);
-                painter->fillRect(rect, QBrush(Qt::black));
+                QRect rect(j * BLOCK_SIZE, i * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                painter->fillRect(rect, Qt::black);
                 painter->drawRect(rect);
                 break;
             }
-            case MapDefinitions::eFloor:
+            case eFloor:
             {
-                QRect rect(j * MapDefinitions::BLOCK_SIZE, i * MapDefinitions::BLOCK_SIZE, MapDefinitions::BLOCK_SIZE, MapDefinitions::BLOCK_SIZE);
-                painter->setPen(Qt::NoPen);
-                painter->fillRect(rect, QBrush(Qt::white));
+                QRect rect(j * BLOCK_SIZE, i * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+
+                painter->fillRect(rect, QBrush(visible ? Qt::white : QColor(100, 100, 100)));
                 painter->drawRect(rect);
                 break;
             }
@@ -112,19 +140,54 @@ void MainWindow::DrawMap(QPainter* painter)
                 assert(false);
             }
 
-            // Draw enemy
-            int id = level->GetLevelCharacterMap()[i + yOffset][j + xOffset];
-            if (id != MapDefinitions::eEmpty && id != MapDefinitions::ePlayer)
+            // Draw interactables
+            switch(level->GetLevelInteractableMapAt(locationMap))
             {
-                auto enemy = level->GetEnemies()[id];
-                if (enemy->IsAlive())
+            case eTreasure:
+            {
+                if (visible)
                 {
-                    QRect rect(((MapDefinitions::BLOCK_SIZE - 70) / 2) + (j * MapDefinitions::BLOCK_SIZE),
-                               ((MapDefinitions::BLOCK_SIZE - 70) / 2) + (i * MapDefinitions::BLOCK_SIZE),
+                    QRect rect(((BLOCK_SIZE - 70) / 2) + (j * BLOCK_SIZE),
+                               ((BLOCK_SIZE - 70) / 2) + (i * BLOCK_SIZE),
                                70,
                                70);
-                    painter->fillRect(rect, QBrush(Qt::blue));
+                    painter->fillRect(rect, QBrush(Qt::yellow));
                     painter->drawRect(rect);
+                }
+                break;
+            }
+            case eDoor:
+            {
+                std::shared_ptr<Door> door;
+                if (level->GetDoor(door, locationMap) && !door->IsOpened())
+                {
+                    QRect rect(j * BLOCK_SIZE, i * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                    painter->fillRect(rect, QBrush(visible ? Qt::blue : Qt::darkBlue));
+                    painter->drawRect(rect);
+                }
+                break;
+            }
+            case eNone:
+            default:
+                break;
+            }
+
+            if (visible)
+            {
+                // Draw enemy
+                int id = level->GetLevelCharacterMapAt(locationMap);
+                std::shared_ptr<Enemy> enemy;
+                if (level->GetEnemy(enemy, id))
+                {
+                    if (enemy->IsAlive())
+                    {
+                        QRect rect(((BLOCK_SIZE - 70) / 2) + (j * BLOCK_SIZE),
+                                   ((BLOCK_SIZE - 70) / 2) + (i * BLOCK_SIZE),
+                                   70,
+                                   70);
+                        painter->fillRect(rect, QBrush(Qt::blue));
+                        painter->drawRect(rect);
+                    }
                 }
             }
         }
@@ -154,8 +217,8 @@ void MainWindow::DrawMap(QPainter* painter)
         assert(false);
     }
 
-    QRect rect(((MapDefinitions::BLOCK_SIZE - 85) / 2) + (6 * MapDefinitions::BLOCK_SIZE) + playerOffsetX,
-               ((MapDefinitions::BLOCK_SIZE - 85) / 2) + (3 * MapDefinitions::BLOCK_SIZE) + playerOffsetY,
+    QRect rect(((BLOCK_SIZE - 85) / 2) + (6 * BLOCK_SIZE) + playerOffsetX,
+               ((BLOCK_SIZE - 85) / 2) + (3 * BLOCK_SIZE) + playerOffsetY,
                85,
                85);
     painter->drawImage(rect, player->GetIdleSprite());

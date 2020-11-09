@@ -1,6 +1,7 @@
 #ifndef GAMECONTROLLER_H
 #define GAMECONTROLLER_H
 
+#include "Definitions/TypeDefinitions.h"
 #include "World/Characters/Character.h"
 
 #include <atomic>
@@ -26,7 +27,8 @@ public:
     void EndLevel();
 
     // Actions
-    bool PlayerMove(CharacterDefinitions::DirectionEnum eDirection);
+    bool PlayerMove(MapDefinitions::DirectionEnum eDirection);
+    bool PlayerTurn(MapDefinitions::DirectionEnum eDirection);
     bool PlayerAttack();
     bool PlayerPotion();
     bool PlayerUse();
@@ -40,9 +42,9 @@ public:
 private:
     bool PlayerAction();
     void EnemyAction(std::shared_ptr<Enemy> enemy);
-    bool Move(std::shared_ptr<Character> character, CharacterDefinitions::DirectionEnum eDirection);
-    CharacterDefinitions::DirectionEnum IsAdjacent(std::pair<int, int> attackerLocation,
-                                                   std::pair<int, int> targetLocation) const;
+    bool Move(std::shared_ptr<Character> character, MapDefinitions::DirectionEnum eDirection);
+    MapDefinitions::DirectionEnum IsAdjacent(Location attackerLocation,
+                                             Location targetLocation) const;
     void Attack(std::shared_ptr<Character> attacker, std::shared_ptr<Character> target);
 
     void LevelThread();

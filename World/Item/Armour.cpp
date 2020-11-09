@@ -8,7 +8,7 @@ Armour::Armour(std::string name,
                int armourClassBase,
                ArmourTypeEnum eArmourType,
                int minStrength) :
-    Equipment(name),
+    Equipment(name, ItemDefinitions::eArmour),
     m_armouClassBase(armourClassBase),
     m_eArmourType(eArmourType),
     m_minStrength(minStrength)

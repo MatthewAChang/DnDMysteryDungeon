@@ -2,8 +2,8 @@
 
 #include "Helper/Helper.h"
 #include "World/Generate/EquipmentGenerator.h"
-#include "World/Equipment/Armour.h"
-#include "World/Equipment/Weapon.h"
+#include "World/Item/Armour.h"
+#include "World/Item/Weapon.h"
 #include "Definitions/WeaponDefinitions.h"
 
 #include <algorithm>
@@ -27,7 +27,7 @@ Character::Character(int id,
     m_weaponEmpty(),
     m_oldLocation({0, 0}),
     m_location({0, 0}),
-    m_eDirection(CharacterDefinitions::eWest)
+    m_eDirection(MapDefinitions::eWest)
 {
     for (const auto& sprite : sprites)
     {
@@ -51,7 +51,7 @@ Character::Character(int id,
                      int health,
                      std::shared_ptr<Armour> armour,
                      std::shared_ptr<Weapon> weapon,
-                     std::pair<int, int> location) :
+                     Location location) :
     m_id(id),
     m_name(name),
     m_abilityScores(abilityScores),
@@ -62,7 +62,7 @@ Character::Character(int id,
     m_weapon(weapon),
     m_oldLocation(location),
     m_location(location),
-    m_eDirection(CharacterDefinitions::eWest)
+    m_eDirection(MapDefinitions::eWest)
 {
     UpdateArmourClass();
 }
@@ -120,7 +120,7 @@ void Character::UpdateArmourClass()
                              Helper::GetInstance().GetAbilityScoreModifier(m_abilityScores[eDexterity]));
 }
 
-void Character::SetLocation(std::pair<int, int> location)
+void Character::SetLocation(Location location)
 {
     m_oldLocation = m_location;
     m_location = location;

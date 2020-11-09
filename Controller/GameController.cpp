@@ -7,13 +7,17 @@
 #include "World/Characters/Enemy.h"
 #include "World/Generate/LevelGenerator.h"
 #include "World/Generate/PlayerGenerator.h"
+#include "World/Item/Key.h"
 #include "World/Level/Level.h"
+#include "World/Interactable/Door.h"
+#include "World/Interactable/Treasure.h"
 
 #include "assert.h"
 #include <map>
 #include <iostream>
 
 using namespace CharacterDefinitions;
+using namespace MapDefinitions;
 
 GameController::GameController(MainWindow* mainWindow)
     : m_mainWindow(mainWindow)
@@ -37,7 +41,7 @@ GameController::~GameController()
 
 void GameController::NewLevel()
 {
-    m_level = m_pLevelGenerator->GenerateLevel(m_pPlayer);
+    m_level = m_pLevelGenerator->GenerateLevel(m_pPlayer, 1);
 
     // Create order of actions for characters
     std::vector<std::pair<std::shared_ptr<Character>, int> > characters;
@@ -51,10 +55,12 @@ void GameController::NewLevel()
                                             Helper::GetInstance().GetAbilityScoreModifier(enemy.second->GetAbilityScore(eDexterity))});
     }
 
+    // Sort by initiative roll
     std::sort(characters.begin(), characters.end(), [](std::pair<std::shared_ptr<Character>, int>& a, std::pair<std::shared_ptr<Character>, int>& b) {
         return a.second < b.second;
     });
 
+    // Place characters into queue by ID
     for (const auto& character : characters)
     {
         m_characterIDActionQueue.push(character.first->GetID());
@@ -71,14 +77,14 @@ void GameController::LevelThread()
     {
         int id = m_characterIDActionQueue.front();
         m_characterIDActionQueue.pop();
-        if (id == 0)
+        if (id == MapDefinitions::LEVEL_MAP_PLAYER_ID)
         {
             PlayerAction();
         }
         else
         {
-            std::shared_ptr<Enemy> enemy = m_level->GetEnemies()[id];
-            if (enemy->IsAlive())
+            std::shared_ptr<Enemy> enemy;
+            if (m_level->GetEnemy(enemy, id) && enemy->IsAlive())
             {
                 EnemyAction(enemy);
             }
@@ -126,6 +132,13 @@ void GameController::EnemyAction(std::shared_ptr<Enemy> enemy)
     case eIdle:
         Move(enemy, Helper::GetInstance().GetRandomDirection());
     case eGuard:
+        // Check if close enough to player
+        if (std::abs(enemy->GetLocation().first - m_pPlayer->GetLocation().first) < 6 &&
+            std::abs(enemy->GetLocation().second - m_pPlayer->GetLocation().second) < 3)
+        {
+            enemy->SetState(eAggro);
+            enemy->SetTarget(m_pPlayer);
+        }
         break;
     case eAggro:
     {
@@ -144,17 +157,19 @@ void GameController::EnemyAction(std::shared_ptr<Enemy> enemy)
             else
             {
                 DirectionEnum direction = Helper::GetInstance().FindNextMove(m_level->GetLevelTerrainMap(),
+                                                                             m_level->GetLevelInteractableMap(),
                                                                              m_level->GetLevelCharacterMap(),
                                                                              enemy->GetLocation(),
                                                                              target->GetLocation());
-                if (direction == CharacterDefinitions::eNull)
+                if (direction == MapDefinitions::eNull)
                 {
                     direction = Helper::GetInstance().FindNextMove(m_level->GetLevelTerrainMap(),
+                                                                   m_level->GetLevelInteractableMap(),
                                                                    enemy->GetLocation(),
                                                                    target->GetLocation());
                 }
 
-                if (direction != CharacterDefinitions::eNull)
+                if (direction != MapDefinitions::eNull)
                 {
                     Move(enemy, direction);
                 }
@@ -162,12 +177,21 @@ void GameController::EnemyAction(std::shared_ptr<Enemy> enemy)
         }
         break;
     }
+    case eSleep:
+        // Check if next to player
+        if (std::abs(enemy->GetLocation().first - m_pPlayer->GetLocation().first) == 1 &&
+            std::abs(enemy->GetLocation().second - m_pPlayer->GetLocation().second) == 1)
+        {
+            enemy->SetState(eAggro);
+            enemy->SetTarget(m_pPlayer);
+        }
+        break;
     default:
         assert(false);
     }
 }
 
-DirectionEnum GameController::IsAdjacent(std::pair<int, int> attackerLocation, std::pair<int, int> targetLocation) const
+DirectionEnum GameController::IsAdjacent(Location attackerLocation, Location targetLocation) const
 {
     if (attackerLocation.first - 1 == targetLocation.first && attackerLocation.second == targetLocation.second)
     {
@@ -192,6 +216,13 @@ DirectionEnum GameController::IsAdjacent(std::pair<int, int> attackerLocation, s
 bool GameController::PlayerMove(DirectionEnum eDirection)
 {
     return Move(m_pPlayer, eDirection);
+}
+
+bool GameController::PlayerTurn(DirectionEnum eDirection)
+{
+    m_pPlayer->SetDirection(eDirection);
+
+    return false;
 }
 
 bool GameController::Move(std::shared_ptr<Character> character, DirectionEnum eDirection)
@@ -226,13 +257,16 @@ bool GameController::Move(std::shared_ptr<Character> character, DirectionEnum eD
 
     character->SetDirection(eDirection);
 
-    std::pair<int, int> newLocation = { character->GetLocation().first + dx, character->GetLocation().second + dy };
-    if (m_level->GetLevelTerrainMap()[newLocation.second][newLocation.first] == MapDefinitions::eFloor)
+    Location newLocation = { character->GetLocation().first + dx, character->GetLocation().second + dy };
+    if (m_level->GetLevelTerrainMapAt(newLocation) == eFloor &&
+        (m_level->GetLevelInteractableMapAt(newLocation) == eNone || m_level->GetLevelInteractableMapAt(newLocation) == eDoor) &&
+        m_level->GetLevelCharacterMapAt(newLocation) == LEVEL_MAP_EMPTY_ID)
     {
-        if (m_level->GetLevelCharacterMap()[newLocation.second][newLocation.first] == MapDefinitions::eEmpty)
+        std::shared_ptr<Door> door;
+        if (!m_level->GetDoor(door, newLocation) || (m_level->GetDoor(door, newLocation) && door->IsOpened()))
         {
-            int valueToMove = m_level->GetLevelCharacterMap()[character->GetLocation().second][character->GetLocation().first];
-            m_level->UpdateLevelCharacterMap(character->GetLocation(), MapDefinitions::eEmpty);
+            int valueToMove = m_level->GetLevelCharacterMapAt(character->GetLocation());
+            m_level->UpdateLevelCharacterMap(character->GetLocation(), LEVEL_MAP_EMPTY_ID);
             m_level->UpdateLevelCharacterMap(newLocation, valueToMove);
             character->SetLocation(newLocation);
 
@@ -266,10 +300,10 @@ bool GameController::PlayerAttack()
         assert(false);
     }
 
-    int id = m_level->GetLevelCharacterMap()[targetLocation.second][targetLocation.first];
-    if (id != MapDefinitions::eEmpty && id != MapDefinitions::ePlayer)
+    int id = m_level->GetLevelCharacterMapAt(targetLocation);
+    std::shared_ptr<Enemy> enemy;
+    if (m_level->GetEnemy(enemy, id))
     {
-        std::shared_ptr<Enemy> enemy = m_level->GetEnemies()[id];
         if (enemy->GetLocation() == targetLocation)
         {
             Attack(m_pPlayer, enemy);
@@ -289,7 +323,7 @@ void GameController::Attack(std::shared_ptr<Character> attacker, std::shared_ptr
         target->TakeDamage(damage);
         if (!target->IsAlive())
         {
-            m_level->UpdateLevelCharacterMap(target->GetLocation(), MapDefinitions::eEmpty);
+            m_level->UpdateLevelCharacterMap(target->GetLocation(), MapDefinitions::LEVEL_MAP_EMPTY_ID);
         }
         std::cout << "Deals " << damage << " damage " << std::endl;
     }
@@ -297,10 +331,83 @@ void GameController::Attack(std::shared_ptr<Character> attacker, std::shared_ptr
 
 bool GameController::PlayerPotion()
 {
-     return false;
+    return false;
 }
 
 bool GameController::PlayerUse()
 {
-     return false;
+    auto targetLocation = m_pPlayer->GetLocation();
+
+    switch(m_pPlayer->GetDirection())
+    {
+    case eWest:
+        targetLocation.first -= 1;
+        break;
+    case eNorth:
+        targetLocation.second -= 1;
+        break;
+    case eEast:
+        targetLocation.first += 1;
+        break;
+    case eSouth:
+        targetLocation.second += 1;
+        break;
+    case eNull:
+    default:
+        assert(false);
+    }
+
+//    MapDefinitions::LevelInteractableMapEnum interactable = m_level->GetLevelInteractableMapAt(targetLocation);
+
+    switch(m_level->GetLevelInteractableMapAt(targetLocation))
+    {
+    case eTreasure:
+    {
+        std::shared_ptr<Treasure> treasure;
+        if (m_level->GetTreasure(treasure, targetLocation))
+        {
+            for (const auto& item : treasure->GetItems())
+            {
+                switch (item->GetItemType())
+                {
+                case ItemDefinitions::eKey:
+                {
+                    m_pPlayer->AddKey(std::static_pointer_cast<Key>(item)->GetType());
+                    std::cout << "Get Key" << std::endl;
+                    break;
+                }
+                default:
+                    break;
+                }
+            }
+            treasure->ClearItems();
+        }
+
+        break;
+    }
+    case eDoor:
+    {
+        std::shared_ptr<Door> door;
+        if (m_level->GetDoor(door, targetLocation))
+        {
+            if (!door->IsOpened())
+            {
+                if (m_pPlayer->HasKey(door->GetType()))
+                {
+                    door->Open();
+                    m_pPlayer->UseKey(door->GetType());
+                    std::cout << "Use Key" << std::endl;
+                }
+                else
+                {
+                    std::cout << "Need Key" << std::endl;
+                }
+            }
+        }
+        break;
+    }
+    default:
+        break;
+    }
+    return false;
 }

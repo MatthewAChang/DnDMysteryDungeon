@@ -19,7 +19,7 @@ EnemyGenerator::~EnemyGenerator()
 }
 
 std::shared_ptr<Enemy> EnemyGenerator::GenerateEnemy(EnemyEnum eEnemy,
-                                                     std::pair<int, int> location,
+                                                     Location location,
                                                      CharacterDefinitions::EnemyStateEnum state)
 {
     auto enemy = std::make_shared<Enemy>(m_NextID,

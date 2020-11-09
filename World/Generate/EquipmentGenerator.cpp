@@ -1,7 +1,7 @@
 #include "EquipmentGenerator.h"
 
-#include "World/Equipment/Armour.h"
-#include "World/Equipment/Weapon.h"
+#include "World/Item/Armour.h"
+#include "World/Item/Weapon.h"
 
 std::shared_ptr<Armour> EquipmentGenerator::GenerateArmour(ArmourDefinitions::ArmourEnum eArmour)
 {

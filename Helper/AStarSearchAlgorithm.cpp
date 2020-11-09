@@ -4,13 +4,14 @@
 
 #include <queue>
 
-std::pair<int, int> AStar::FindNextMove(const LevelTerrainMap& levelMap,
-                                        const std::vector<std::vector<int>>& characterMap,
-                                        const std::pair<int, int>& src,
-                                        const std::pair<int, int>& dest)
+Location AStar::FindNextMove(const LevelTerrainMap& terrainMap,
+                             const LevelInteractableMap& interactableMap,
+                             const LevelCharacterMap& characterMap,
+                             Location src,
+                             Location dest)
 {
-    size_t rowLength = levelMap.size();
-    size_t columnLength = levelMap[0].size();
+    size_t rowLength = terrainMap.size();
+    size_t columnLength = terrainMap[0].size();
 
     std::vector<std::vector<bool>> closedList (rowLength, std::vector<bool>(columnLength, false));
 
@@ -24,12 +25,12 @@ std::pair<int, int> AStar::FindNextMove(const LevelTerrainMap& levelMap,
     cellDetails[i][j].g = 0;
     cellDetails[i][j].g = 0;
 
-    std::queue<std::pair<double, std::pair<int, int>>> openList;
+    std::queue<std::pair<double, Location>> openList;
     openList.push({0.0, {i, j}});
 
     while (!openList.empty())
     {
-        std::pair<double, std::pair<int, int>> p = openList.front();
+        std::pair<double, Location> p = openList.front();
 
         openList.pop();
 
@@ -46,7 +47,7 @@ std::pair<int, int> AStar::FindNextMove(const LevelTerrainMap& levelMap,
 
             return Trace(cellDetails, dest);
         }
-        else if (!closedList[i - 1][j] && IsUnblockedLevelMap(levelMap, i - 1, j) && IsUnblockedCharacterMap(characterMap, i - 1, j))
+        else if (!closedList[i - 1][j] && IsUnblockedMap(terrainMap, interactableMap, characterMap, i - 1, j))
         {
             gNew = cellDetails[i][j].g + 1.0;
             hNew = CalculateHValue(i - 1, j, dest);
@@ -72,7 +73,7 @@ std::pair<int, int> AStar::FindNextMove(const LevelTerrainMap& levelMap,
 
             return Trace(cellDetails, dest);
         }
-        else if (!closedList[i + 1][j] && IsUnblockedLevelMap(levelMap, i + 1, j) && IsUnblockedCharacterMap(characterMap, i + 1, j))
+        else if (!closedList[i + 1][j] && IsUnblockedMap(terrainMap, interactableMap, characterMap, i + 1, j))
         {
             gNew = cellDetails[i][j].g + 1.0;
             hNew = CalculateHValue(i + 1, j, dest);
@@ -98,7 +99,7 @@ std::pair<int, int> AStar::FindNextMove(const LevelTerrainMap& levelMap,
 
             return Trace(cellDetails, dest);
         }
-        else if (!closedList[i][j + 1] && IsUnblockedLevelMap(levelMap, i, j + 1) && IsUnblockedCharacterMap(characterMap, i, j + 1))
+        else if (!closedList[i][j + 1] && IsUnblockedMap(terrainMap, interactableMap, characterMap, i, j + 1))
         {
             gNew = cellDetails[i][j].g + 1.0;
             hNew = CalculateHValue(i, j + 1, dest);
@@ -124,7 +125,7 @@ std::pair<int, int> AStar::FindNextMove(const LevelTerrainMap& levelMap,
 
             return Trace(cellDetails, dest);
         }
-        else if (!closedList[i][j - 1] && IsUnblockedLevelMap(levelMap, i, j - 1) && IsUnblockedCharacterMap(characterMap, i, j - 1))
+        else if (!closedList[i][j - 1] && IsUnblockedMap(terrainMap, interactableMap, characterMap, i, j - 1))
         {
             gNew = cellDetails[i][j].g + 1.0;
             hNew = CalculateHValue(i, j - 1, dest);
@@ -148,30 +149,31 @@ std::pair<int, int> AStar::FindNextMove(const LevelTerrainMap& levelMap,
 }
 
 
-bool AStar::IsUnblockedLevelMap(const LevelTerrainMap& levelMap, int i, int j)
+bool AStar::IsUnblockedMap(const LevelTerrainMap& terrainMap,
+                           const LevelInteractableMap& interactableMap,
+                           const LevelCharacterMap& characterMap,
+                           int i,
+                           int j)
 {
-    return levelMap[i][j] == MapDefinitions::eFloor;
+    return terrainMap[i][j] == MapDefinitions::eFloor &&
+           interactableMap[i][j] == MapDefinitions::eNone &&
+            (characterMap.empty() || characterMap[i][j] == MapDefinitions::LEVEL_MAP_EMPTY_ID);
 }
 
-bool AStar::IsUnblockedCharacterMap(const std::vector<std::vector<int>>& characterMap, int i, int j)
-{
-    return characterMap.empty() || characterMap[i][j] == MapDefinitions::eEmpty;
-}
-
-double AStar::CalculateHValue(int row, int col, const std::pair<int, int>& dest)
+double AStar::CalculateHValue(int row, int col, Location dest)
 {
     // Return using the distance formula
     return static_cast<double>(sqrt((row - dest.first) * (row - dest.first)
                                     + (col - dest.second) * (col - dest.second)));
 }
 
-bool AStar::IsDestination(int row, int col, const std::pair<int, int>& dest)
+bool AStar::IsDestination(int row, int col, Location dest)
 {
     return row == dest.first && col == dest.second;
 }
 
-std::pair<int, int> AStar::Trace(const std::vector<std::vector<Cell>>& cellDetails,
-                                 const std::pair<int, int>& dest)
+Location AStar::Trace(const std::vector<std::vector<Cell>>& cellDetails,
+                      Location dest)
 {
     int prevRow = dest.first;
     int prevCol = dest.second;
