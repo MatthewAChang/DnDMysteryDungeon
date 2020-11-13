@@ -1,6 +1,8 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "Definitions/MenuDefinitions.h"
+
 #include <QMainWindow>
 #include <QPainter>
 #include <QKeyEvent>
@@ -27,13 +29,18 @@ protected:
     void keyPressEvent(QKeyEvent *event) override;
 
 private:
-    void NewLevel();
-
+    void keyPressEventGame(QKeyEvent *event);
+    void keyPressEventMenu(QKeyEvent *event);
     // Draw map
     void DrawMap(QPainter* painter);
+
+    void setMenuOpen(bool menuOpen);
 
     Ui::MainWindow *ui;
 
     std::shared_ptr<GameController> m_pGameController;
+
+    bool m_menuOpen;
+    MenuDefinitions::MenuItemEnum m_menuItemSelected;
 };
 #endif // MAINWINDOW_H

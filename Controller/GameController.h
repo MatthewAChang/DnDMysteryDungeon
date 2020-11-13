@@ -34,6 +34,7 @@ public:
     bool PlayerUse();
     void FinishPlayerTurn() { m_playerTurn = false; }
 
+    bool GetLevelRunning() const { return m_levelRunning; }
 
     std::shared_ptr<Player> GetPlayer() const { return m_pPlayer; }
     std::shared_ptr<Level> GetLevel() const { return m_level; }

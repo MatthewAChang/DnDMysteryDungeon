@@ -15,13 +15,18 @@
 #include <QGraphicsPixmapItem>
 
 using namespace MapDefinitions;
+using namespace MenuDefinitions;
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
     , m_pGameController(std::make_shared<GameController>(this))
+    , m_menuOpen(true)
+    , m_menuItemSelected(eStart)
 {
     ui->setupUi(this);
+
+    ui->StartLabel->setStyleSheet(SELECTED_FONT);
 }
 
 MainWindow::~MainWindow()
@@ -33,10 +38,59 @@ void MainWindow::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
 
-    DrawMap(&painter);
+    if (!m_menuOpen)
+    {
+        DrawMap(&painter);
+    }
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
+{
+    if (m_menuOpen)
+    {
+        keyPressEventMenu(event);
+    }
+    else
+    {
+        keyPressEventGame(event);
+    }
+
+    update();
+}
+
+void MainWindow::keyPressEventMenu(QKeyEvent *event)
+{
+    switch(event->key())
+    {
+    case Qt::Key_Up:
+    case Qt::Key_Down:
+        if (m_menuItemSelected == eStart)
+        {
+            m_menuItemSelected = eExit;
+            ui->StartLabel->setStyleSheet(NOT_SELECTED_FONT);
+            ui->ExitLabel->setStyleSheet(SELECTED_FONT);
+        }
+        else
+        {
+            m_menuItemSelected = eStart;
+            ui->StartLabel->setStyleSheet(SELECTED_FONT);
+            ui->ExitLabel->setStyleSheet(NOT_SELECTED_FONT);
+        }
+        break;
+    case Qt::Key_Z:
+        if (m_menuItemSelected == eStart)
+        {
+            setMenuOpen(false);
+        }
+        else
+        {
+            close();
+        }
+        break;
+    }
+}
+
+void MainWindow::keyPressEventGame(QKeyEvent *event)
 {
     if (!m_pGameController->IsPlayerTurn())
     {
@@ -67,6 +121,9 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     {
         switch(event->key())
         {
+        case Qt::Key_Escape:
+            setMenuOpen(true);
+            break;
         case Qt::Key_Left:
             bCompletedAction = m_pGameController->PlayerMove(eWest);
             break;
@@ -91,11 +148,23 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
         }
     }
 
-    update();
-
     if (bCompletedAction)
     {
         m_pGameController->FinishPlayerTurn();
+    }
+}
+
+void MainWindow::setMenuOpen(bool menuOpen)
+{
+    m_menuOpen = menuOpen;
+    ui->MenuFrame->setVisible(menuOpen);
+    if (m_pGameController->GetLevelRunning())
+    {
+        ui->StartLabel->setText(CONTINUE_TEXT);
+    }
+    else
+    {
+        ui->StartLabel->setText(START_TEXT);
     }
 }
 
